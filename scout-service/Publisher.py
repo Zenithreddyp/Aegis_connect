@@ -13,5 +13,3 @@ def addScantoResult(payload):
         routing_key="ternary_logs",
         body=payload,
     )
-
-

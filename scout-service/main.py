@@ -1,21 +1,20 @@
 import time
 import os
-import json 
+import json
 from Publisher import addScantoResult
 
-LOGFILE_NAME="logfiles.log"
+LOGFILE_NAME = "logfiles.log"
+
 
 def IngestionLoop():
-    count=1
+    count = 1
     log_batch = []
 
     with open(LOGFILE_NAME, "r") as file:
-
         file.seek(0, 2)
 
         start_time = time.time()
         while True:
-            
             line = file.readline().strip()
 
             if line:
@@ -27,11 +26,13 @@ def IngestionLoop():
 
             if time.time() - start_time >= 2:
                 if log_batch:
-                    print(f"{count}--- 2 sec done: Sending {len(log_batch)} logs to Queue ---")
-                    count=count+1
+                    print(
+                        f"{count}--- 2 sec done: Sending {len(log_batch)} logs to Queue ---"
+                    )
+                    count = count + 1
                     addScantoResult(json.dumps(log_batch))
                     log_batch = []
-            
+
                 start_time = time.time()
 
 
