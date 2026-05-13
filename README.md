@@ -43,23 +43,6 @@ It leverages a high-throughput publish-subscribe architecture paired with local 
 
 Aegis Connect operates through two primary microservices that communicate asynchronously via RabbitMQ.
 
-```mermaid
-graph TD
-    A[Local Log Files] -->|Ingest| B(Scout Service)
-    B -->|Publish Batch| C{RabbitMQ Queue<br/>'ternary_logs'}
-    C -->|Consume Batch| D(Auditor Swarm)
-    D -->|Route| E[Agent Pipeline]
-    E --> F[Sentry Agent]
-    E --> G[Investigator Agent]
-    F -.-> H((Ollama LLM))
-    G -.-> H
-    H -->|Threat Assessment| I[Alerts & Findings]
-    
-    style B fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    style D fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    style C fill:#e67e22,stroke:#d35400,stroke-width:2px,color:#fff
-    style H fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-```
 
 ### 1. Scout Service (`scout-service`)
 The frontline ingestion pipeline. It continuously monitors designated log files, chunks new entries into batches, and securely publishes these payloads to the RabbitMQ exchange.
