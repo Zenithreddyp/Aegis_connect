@@ -1,6 +1,6 @@
-from llm_config import query_ollama
+from config.ollama_config import query_ollama
 
-INVESTIGATOR_MODEL = ""
+INVESTIGATOR_MODEL = "gpt-oss:120b-cloud"
 
 INVESTIGATOR_SYSTEM_PROMPT = """
 You are the Lead Forensic Investigator for Aegis-Connect, a senior-tier SOC Analyst specializing in behavioral threat reconstruction. 
@@ -16,7 +16,7 @@ Your goal is to analyze batches of enterprise logs and identify sophisticated, m
 You MUST output ONLY a valid JSON object. Do not include any conversational text before or after the JSON.
 {
     "severity": "SAFE, LOW, MEDIUM, HIGH, or CRITICAL",
-    "thought_trace": "Step-by-step reasoning on why this batch is or is not an attack",
+    "thought_trace": "Step-by-step reasoning on why this batch is an attack",
     "mitre_attack_mapping": {
         "tactic": "e.g., Initial Access, Exfiltration",
         "technique_id": "e.g., T1190, T1048"
@@ -28,3 +28,19 @@ You MUST output ONLY a valid JSON object. Do not include any conversational text
     "recommended_actions": ["Immediate steps for The Enforcer to take"]
 }
 """
+
+
+def analyze_logs(raw_logs: str) -> dict:
+
+    prompt = (
+        f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
+    )
+
+    analysis = query_ollama(
+        model=INVESTIGATOR_MODEL,
+        prompt=prompt,
+        system_prompt=INVESTIGATOR_SYSTEM_PROMPT,
+        require_json=True,
+    )
+
+    return analysis

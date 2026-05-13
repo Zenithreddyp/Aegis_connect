@@ -1,3 +1,4 @@
+import sys
 import time
 import os
 import json
@@ -37,4 +38,11 @@ def IngestionLoop():
 
 
 if __name__ == "__main__":
-    IngestionLoop()
+    try:
+        IngestionLoop()
+    except KeyboardInterrupt:
+        print("Interrupted")
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)

@@ -1,0 +1,52 @@
+[tool.ruff]
+line-length = 145
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    # Core errors
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+
+    # Import handling
+    "I",   # isort (import sorting)
+    "TID", # tidy imports
+    "ICN", # import conventions
+
+    # Code quality
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+    "C4",  # comprehensions
+    "PIE", # misc improvements
+
+    # Type/style improvements
+    "ANN", # annotations
+    "RET", # return issues
+    "ARG", # unused arguments
+
+    # Security/basic checks
+    "S",
+]
+
+ignore = [
+    "ANN101", # self type annotation
+    "ANN102", # cls type annotation
+    "RET504",
+]
+
+
+fixable = ["ALL"]
+
+unfixable = []
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+split-on-trailing-comma = true
+known-first-party = ["your_package_name"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

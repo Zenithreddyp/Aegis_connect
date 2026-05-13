@@ -1,5 +1,6 @@
-import requests
 import json
+
+import requests
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
@@ -25,8 +26,6 @@ def query_ollama(
         # response.raise_for_status()  # Check for HTTP errors
 
         result_text = response.json().get("response", "")
-        print("----OUTPUTTTTTTT----")
-        print(result_text)
         if require_json:
             return json.loads(result_text)
         return {"text": result_text}

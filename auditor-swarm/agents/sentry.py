@@ -1,10 +1,10 @@
-from llm_config import query_ollama
+from config.ollama_config import query_ollama
 
 SENTRY_MODEL = "gpt-oss:120b-cloud"
 
-"qwen3.5:cloud"
-"gpt-oss:120b-cloud"
-"qwen3.5:9b-cloud"
+# "qwen3.5:cloud"
+# "gpt-oss:120b-cloud"
+# "qwen3.5:9b-cloud"
 
 SENTRY_SYSTEM_PROMPT = """You are Sentry, a high-speed SOC Triage Analyst. 
 Your sole task is to perform an initial scan of log batches and determine if they require deep forensic investigation.
@@ -25,14 +25,10 @@ Return ONLY a valid JSON object. No preamble or explanation outside the JSON.
     "confidence_score": 0-100
 }
 """
-count = 1
 
 
 def analyze_logs(raw_logs: str) -> dict:
-    global count
 
-    print(f"{count}[SENTRY] Analyzing new log batch using {SENTRY_MODEL}...")
-    count = count + 1
     prompt = (
         f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
     )
