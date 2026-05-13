@@ -1,7 +1,3 @@
-import sys
-import os
-import json
-
 from llm_config import query_ollama
 
 SENTRY_MODEL = "gpt-oss:120b-cloud"
@@ -16,22 +12,23 @@ Analyze the logs of service which is currently running provided and output ONLY 
 }
 Look specifically for failed logins, privilege escalation, unusual IPs, malware indicators, and persistence techniques.
 """
-count=1
+count = 1
+
 
 def analyze_logs(raw_logs: str) -> dict:
     global count
 
     print(f"{count}[SENTRY] Analyzing new log batch using {SENTRY_MODEL}...")
-    count=count+1
-    prompt = f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
-    
+    count = count + 1
+    prompt = (
+        f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
+    )
+
     analysis = query_ollama(
         model=SENTRY_MODEL,
         prompt=prompt,
         system_prompt=SENTRY_SYSTEM_PROMPT,
-        require_json=True
+        require_json=True,
     )
-    
+
     return analysis
-
-
