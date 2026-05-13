@@ -1,11 +1,12 @@
 import time
+import os
 
 import pika
 
 from engine.orchestrator import analyze_logs
 
 RETRY_DELAY_SECONDS = 5
-RABBITMQ_HOST = "localhost"
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 QUEUE_NAME = "ternary_logs"
 
 

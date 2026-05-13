@@ -134,6 +134,10 @@ class AdvancedPersistentThreat(Actor):
                 "ua": self.ua,
                 "cookie": "-",
             }
+        elif self.phase == 3:
+            # Termination
+            self.is_active = False
+            return None
 
 
 # --- Live Simulator Engine ---

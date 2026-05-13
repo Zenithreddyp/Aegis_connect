@@ -4,7 +4,7 @@ import os
 import json
 from Publisher import addScantoResult
 
-LOGFILE_NAME = "logfiles.log"
+LOGFILE_NAME = os.getenv("LOGFILE_NAME", "logfiles.log")
 
 
 def IngestionLoop():
