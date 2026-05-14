@@ -1,0 +1,29 @@
+services:
+  auditor-swarm:
+    build: ./auditor-swarm
+    env_file:
+      - .env.docker
+    depends_on:
+      RabbitMQ:
+        condition: service_healthy
+
+  scout-service:
+    build: ./scout-service
+    env_file:
+      - .env.docker
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      RabbitMQ:
+        condition: service_healthy
+
+  RabbitMQ:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD","rabbitmq-diagnostics","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

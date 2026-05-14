@@ -11,7 +11,7 @@ def IngestionLoop():
     count = 1
     log_batch = []
 
-    with open(LOGFILE_NAME, "r") as file:
+    with open("../logs/logfiles.log", "r") as file:
         file.seek(0, 2)
 
         start_time = time.time()
@@ -21,7 +21,6 @@ def IngestionLoop():
             if line:
                 pyline = json.loads(line)
                 log_batch.append(pyline)
-                # print(f"Captured log at: {pyline.get('@timestamp', 'N/A')}")
             else:
                 time.sleep(0.1)
 
@@ -32,6 +31,7 @@ def IngestionLoop():
                     )
                     count = count + 1
                     addScantoResult(json.dumps(log_batch))
+                    print("BATCH SENT")
                     log_batch = []
 
                 start_time = time.time()
@@ -39,6 +39,7 @@ def IngestionLoop():
 
 if __name__ == "__main__":
     try:
+        print("STARTED SCOUT")
         IngestionLoop()
     except KeyboardInterrupt:
         print("Interrupted")
