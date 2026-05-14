@@ -1,14 +1,12 @@
-import os
 import json
+import os
 
 import requests
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
 
 
-def query_ollama(
-    model: str, prompt: str, system_prompt: str = "", require_json: bool = True
-) -> dict:
+def query_ollama(model: str, prompt: str, system_prompt: str = "", require_json: bool = True) -> dict:
     """
     Sends a prompt to the local Ollama instance and returns the response.
     """

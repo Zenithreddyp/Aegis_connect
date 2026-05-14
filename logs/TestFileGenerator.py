@@ -179,9 +179,9 @@ class RealTimeSimulator:
         return json.dumps(log) + "\n"
 
     def run(self):
-        print(f"[*] Starting Real-Time Aegis-Connect Logger...")
+        print("[*] Starting Real-Time Aegis-Connect Logger...")
         print(f"[*] Writing live telemetry to: {OUTPUT_FILE}")
-        print(f"[*] Press Ctrl+C to stop.\n")
+        print("[*] Press Ctrl+C to stop.\n")
 
         try:
             # Open file in 'append' mode so it acts like a real log file

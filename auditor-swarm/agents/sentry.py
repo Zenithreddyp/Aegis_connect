@@ -29,9 +29,7 @@ Return ONLY a valid JSON object. No preamble or explanation outside the JSON.
 
 def analyze_logs(raw_logs: str) -> dict:
 
-    prompt = (
-        f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
-    )
+    prompt = f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
 
     analysis = query_ollama(
         model=SENTRY_MODEL,

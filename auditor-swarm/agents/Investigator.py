@@ -32,9 +32,7 @@ You MUST output ONLY a valid JSON object. Do not include any conversational text
 
 def analyze_logs(raw_logs: str) -> dict:
 
-    prompt = (
-        f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
-    )
+    prompt = f"Analyze the following logs based on your system instructions:\n\n{raw_logs}"
 
     analysis = query_ollama(
         model=INVESTIGATOR_MODEL,
