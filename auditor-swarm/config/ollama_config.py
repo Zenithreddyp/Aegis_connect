@@ -22,7 +22,7 @@ def query_ollama(model: str, prompt: str, system_prompt: str = "", require_json:
 
     try:
         response = requests.post(OLLAMA_URL, json=payload)
-        # response.raise_for_status()  # Check for HTTP errors
+        response.raise_for_status()  # Check for HTTP errors
 
         result_text = response.json().get("response", "")
         if require_json:

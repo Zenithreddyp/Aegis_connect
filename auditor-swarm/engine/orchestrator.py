@@ -1,7 +1,9 @@
 from .nodes import finalize_node, investigator_node, sentry_node
 from .router import threat_router
 from .state import auditstate
+from .reporter import ReportBundler
 
+report=ReportBundler()
 
 def analyze_logs(raw_logs: str):
 
@@ -14,6 +16,10 @@ def analyze_logs(raw_logs: str):
             investigator_node(audit)
 
         finalize_node(audit)
+
+        if audit.severity in ["MEDIUM","HIGH", "CRITICAL"]:
+            report.add_result(audit)
+
 
         print(audit)
 

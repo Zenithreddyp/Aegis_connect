@@ -37,6 +37,5 @@ def investigator_node(state: auditstate):
 
 def finalize_node(state: auditstate):
     state.status = "COMPLETED"
-    print(state)
 
     return state
