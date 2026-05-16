@@ -11,7 +11,7 @@ def IngestionLoop():
     count = 1
     log_batch = []
 
-    with open("../logs/logfiles.log", "r") as file:
+    with open(LOGFILE_NAME, "r") as file:
         file.seek(0, 2)
 
         start_time = time.time()

@@ -31,19 +31,46 @@ class AegisReport(FPDF):
         self.generated_at = generated_at
 
     @staticmethod
-    def _safe(text: str) -> str:
+    def _safe(text) -> str:
         """Encode text to latin-1, replacing unsupported Unicode chars."""
+        text = str(text) if text is not None else ""
         return text.encode("latin-1", errors="replace").decode("latin-1")
+
+    def _full_width(self) -> float:
+        """Return the full usable width between margins."""
+        return self.w - self.l_margin - self.r_margin
+
+    def _reset_cursor(self):
+        """Reset X to left margin to prevent cursor drift."""
+        self.set_x(self.l_margin)
+
+    def _safe_multi_cell(self, h, text, indent=0):
+        """
+        Wrapper around multi_cell that always resets X and uses an
+        explicit width, preventing the 'Not enough horizontal space' error.
+        """
+        self._reset_cursor()
+        w = self._full_width()
+        if indent > 0 and indent < w - 20:
+            self.set_x(self.l_margin + indent)
+            w = w - indent
+        # Safety clamp — never go below 20mm
+        w = max(w, 20)
+        self.multi_cell(w, h, self._safe(text))
+        # Always reset X after multi_cell to prevent drift
+        self._reset_cursor()
 
     # ── Header / Footer ──────────────────────────────────────────────────
     def header(self):
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(30, 30, 30)
-        self.cell(0, 10, "AEGIS-CONNECT", ln=True, align="L")
+        self._reset_cursor()
+        self.cell(self._full_width(), 10, "AEGIS-CONNECT", ln=True, align="L")
 
         self.set_font("Helvetica", "", 9)
         self.set_text_color(120, 120, 120)
-        self.cell(0, 5, "Security Audit Report", ln=True, align="L")
+        self._reset_cursor()
+        self.cell(self._full_width(), 5, "Security Audit Report", ln=True, align="L")
         self.line(10, self.get_y() + 2, 200, self.get_y() + 2)
         self.ln(6)
 
@@ -51,33 +78,39 @@ class AegisReport(FPDF):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(160, 160, 160)
-        self.cell(95, 10, f"Generated: {self.generated_at}", align="L")
-        self.cell(95, 10, f"Page {self.page_no()}/{{nb}}", align="R")
+        self.cell(95, 10, self._safe(f"Generated: {self.generated_at}"), align="L")
+        self.cell(95, 10, self._safe(f"Page {self.page_no()}/{{nb}}"), align="R")
 
     # ── Helpers ──────────────────────────────────────────────────────────
     def _section_title(self, title: str):
         self.set_font("Helvetica", "B", 13)
         self.set_text_color(40, 40, 40)
-        self.cell(0, 10, title, ln=True)
+        self._reset_cursor()
+        self.cell(self._full_width(), 10, self._safe(title), ln=True)
         self.ln(1)
 
-    def _label_value(self, label: str, value: str, bold_value: bool = False):
+    def _label_value(self, label: str, value, bold_value: bool = False):
+        # Label on its own line
         self.set_font("Helvetica", "B", 10)
         self.set_text_color(80, 80, 80)
-        self.cell(40, 6, f"{label}:", align="L")
+        self._reset_cursor()
+        self.cell(self._full_width(), 6, self._safe(f"{label}:"), ln=True)
 
+        # Value indented slightly below
         self.set_font("Helvetica", "B" if bold_value else "", 10)
         self.set_text_color(30, 30, 30)
-        self.multi_cell(0, 6, self._safe(str(value)))
+        self._safe_multi_cell(5, value, indent=5)
 
     def _severity_badge(self, severity: str):
         """Draw a coloured severity badge."""
-        r, g, b = SEVERITY_COLOURS.get(severity, (108, 117, 125))
+        sev = self._safe(severity) if severity else "UNKNOWN"
+        r, g, b = SEVERITY_COLOURS.get(sev, (108, 117, 125))
         self.set_fill_color(r, g, b)
         self.set_text_color(255, 255, 255)
         self.set_font("Helvetica", "B", 11)
-        badge_w = self.get_string_width(f"  {severity}  ") + 4
-        self.cell(badge_w, 8, f"  {severity}  ", fill=True, ln=True)
+        badge_w = self.get_string_width(f"  {sev}  ") + 4
+        self._reset_cursor()
+        self.cell(badge_w, 8, f"  {sev}  ", fill=True, ln=True)
         self.set_text_color(30, 30, 30)
         self.ln(3)
 
@@ -87,16 +120,24 @@ class AegisReport(FPDF):
         self.line(10, y, 200, y)
         self.ln(4)
 
+    def _sub_heading(self, text: str):
+        """Render a sub-heading label."""
+        self.set_font("Helvetica", "B", 10)
+        self.set_text_color(80, 80, 80)
+        self._reset_cursor()
+        self.cell(self._full_width(), 6, self._safe(text), ln=True)
+
     # ── High-level sections ──────────────────────────────────────────────
     def add_executive_summary(self, audits: list):
         self._section_title("Executive Summary")
         total = len(audits)
         counts = {}
         for a in audits:
-            counts[a.severity] = counts.get(a.severity, 0) + 1
+            sev = a.severity if a.severity else "UNKNOWN"
+            counts[sev] = counts.get(sev, 0) + 1
 
         self._label_value("Total Findings", str(total))
-        for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "SAFE"):
+        for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "SAFE", "UNKNOWN"):
             if sev in counts:
                 self._label_value(f"  {sev}", str(counts[sev]))
         self.ln(3)
@@ -117,21 +158,17 @@ class AegisReport(FPDF):
         # Sentry notes
         if audit.sentry_notes:
             self.ln(2)
-            self.set_font("Helvetica", "B", 10)
-            self.set_text_color(80, 80, 80)
-            self.cell(0, 6, "Sentry Analysis:", ln=True)
+            self._sub_heading("Sentry Analysis:")
             self.set_font("Helvetica", "", 9)
             self.set_text_color(50, 50, 50)
-            self.multi_cell(0, 5, self._safe(str(audit.sentry_notes)))
+            self._safe_multi_cell(5, audit.sentry_notes)
             self.ln(2)
 
         # Investigator deep-dive (only for HIGH / CRITICAL)
-        if audit.investigator_report:
+        if audit.investigator_report and isinstance(audit.investigator_report, dict):
             report = audit.investigator_report
 
-            self.set_font("Helvetica", "B", 10)
-            self.set_text_color(80, 80, 80)
-            self.cell(0, 6, "Investigator Deep-Dive:", ln=True)
+            self._sub_heading("Investigator Deep-Dive:")
 
             # Thought trace
             if report.get("thought_trace"):
@@ -143,7 +180,7 @@ class AegisReport(FPDF):
 
             # MITRE ATT&CK mapping
             mitre = report.get("mitre_attack_mapping")
-            if mitre:
+            if mitre and isinstance(mitre, dict):
                 tactic = mitre.get("tactic", "N/A")
                 tech   = mitre.get("technique_id", "N/A")
                 self._label_value("MITRE ATT&CK", f"{tactic}  ({tech})")
@@ -152,56 +189,51 @@ class AegisReport(FPDF):
             entries = report.get("suspicious_entries", [])
             if entries:
                 self.ln(1)
-                self.set_font("Helvetica", "B", 10)
-                self.set_text_color(80, 80, 80)
-                self.cell(0, 6, "Suspicious Entries:", ln=True)
+                self._sub_heading("Suspicious Entries:")
                 self.set_font("Courier", "", 8)
                 self.set_text_color(60, 60, 60)
-                for entry in entries:
-                    self.multi_cell(0, 4, self._safe(f"  > {entry}"))
+                if isinstance(entries, list):
+                    for entry in entries:
+                        self._safe_multi_cell(4, f"  > {entry}")
+                else:
+                    self._safe_multi_cell(4, f"  > {entries}")
                 self.ln(1)
 
             # Recommended actions
             actions = report.get("recommended_actions", [])
             if actions:
-                self.set_font("Helvetica", "B", 10)
-                self.set_text_color(80, 80, 80)
-                self.cell(0, 6, "Recommended Actions:", ln=True)
+                self._sub_heading("Recommended Actions:")
                 self.set_font("Helvetica", "", 9)
                 self.set_text_color(50, 50, 50)
                 if isinstance(actions, list):
                     for action in actions:
-                        self.multi_cell(0, 5, self._safe(f"  - {action}"))
+                        self._safe_multi_cell(5, f"  - {action}")
                 else:
-                    self.multi_cell(0, 5, self._safe(str(actions)))
+                    self._safe_multi_cell(5, str(actions))
                 self.ln(1)
 
         # Enforcer instructions
         if audit.enforcer_instructions:
-            self.set_font("Helvetica", "B", 10)
-            self.set_text_color(80, 80, 80)
-            self.cell(0, 6, "Enforcer Instructions:", ln=True)
+            self._sub_heading("Enforcer Instructions:")
             self.set_font("Helvetica", "", 9)
             self.set_text_color(50, 50, 50)
             if isinstance(audit.enforcer_instructions, list):
                 for instr in audit.enforcer_instructions:
-                    self.multi_cell(0, 5, self._safe(f"  - {instr}"))
+                    self._safe_multi_cell(5, f"  - {instr}")
             else:
-                self.multi_cell(0, 5, self._safe(str(audit.enforcer_instructions)))
+                self._safe_multi_cell(5, str(audit.enforcer_instructions))
             self.ln(1)
 
         # Raw logs excerpt (truncated for readability)
         if audit.logs:
             self.ln(1)
-            self.set_font("Helvetica", "B", 10)
-            self.set_text_color(80, 80, 80)
-            self.cell(0, 6, "Raw Log Excerpt:", ln=True)
+            self._sub_heading("Raw Log Excerpt:")
             self.set_font("Courier", "", 7)
             self.set_text_color(100, 100, 100)
             excerpt = str(audit.logs)[:600]
             if len(str(audit.logs)) > 600:
                 excerpt += "\n  ... [truncated]"
-            self.multi_cell(0, 4, self._safe(excerpt))
+            self._safe_multi_cell(4, excerpt)
 
         self.ln(4)
         self._horizontal_rule()
@@ -245,29 +277,41 @@ class ReportBundler:
         filename = f"aegis_report_{timestamp}.pdf"
         filepath = os.path.join(REPORTS_DIR, filename)
 
-        pdf = AegisReport(generated_at)
-        pdf.alias_nb_pages()
-        pdf.set_auto_page_break(auto=True, margin=20)
-        pdf.add_page()
+        try:
+            pdf = AegisReport(generated_at)
+            pdf.alias_nb_pages()
+            pdf.set_auto_page_break(auto=True, margin=20)
+            pdf.add_page()
 
-        # ── Title page info ──────────────────────────────────────────────
-        pdf.set_font("Helvetica", "B", 22)
-        pdf.set_text_color(30, 30, 30)
-        pdf.cell(0, 12, "Threat Analysis Report", ln=True, align="C")
-        pdf.ln(2)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_text_color(100, 100, 100)
-        pdf.cell(0, 6, f"Report ID: {timestamp}", ln=True, align="C")
-        pdf.cell(0, 6, f"Findings: {len(audits)}", ln=True, align="C")
-        pdf.ln(6)
-        pdf._horizontal_rule()
+            # ── Title page info ──────────────────────────────────────────
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(30, 30, 30)
+            pdf._reset_cursor()
+            pdf.cell(pdf._full_width(), 12, "Threat Analysis Report", ln=True, align="C")
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(100, 100, 100)
+            pdf._reset_cursor()
+            pdf.cell(pdf._full_width(), 6, pdf._safe(f"Report ID: {timestamp}"), ln=True, align="C")
+            pdf._reset_cursor()
+            pdf.cell(pdf._full_width(), 6, pdf._safe(f"Findings: {len(audits)}"), ln=True, align="C")
+            pdf.ln(6)
+            pdf._horizontal_rule()
 
-        # ── Executive summary ────────────────────────────────────────────
-        pdf.add_executive_summary(audits)
+            # ── Executive summary ────────────────────────────────────────
+            pdf.add_executive_summary(audits)
 
-        # ── Individual findings ──────────────────────────────────────────
-        for i, audit in enumerate(audits, start=1):
-            pdf.add_finding(i, audit)
+            # ── Individual findings ──────────────────────────────────────
+            for i, audit in enumerate(audits, start=1):
+                try:
+                    pdf.add_finding(i, audit)
+                except Exception as finding_err:
+                    print(f"[REPORTER] Warning: Could not render finding #{i} [{audit.logid}]: {finding_err}")
+                    pdf._section_title(f"Finding #{i} -- [{audit.logid}] (render error)")
+                    pdf._horizontal_rule()
 
-        pdf.output(filepath)
-        print(f"[REPORTER] PDF report saved -> {filepath}")
+            pdf.output(filepath)
+            print(f"[REPORTER] PDF report saved -> {filepath}")
+
+        except Exception as e:
+            print(f"[REPORTER] Failed to generate PDF: {e}")
